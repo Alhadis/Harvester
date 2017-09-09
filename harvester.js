@@ -1,11 +1,11 @@
 (function(){
 	"use strict";
 	
-	/** Don't clobber any existing globals */
+	// Don't clobber any existing globals
 	if(window.harvest || window.silo) return;
 
 
-	/** URL variables for different search modes */
+	// URL constants for different search modes
 	const BY_MATCH  = "";
 	const BY_NEWEST = "&s=indexed&o=desc";
 	const BY_OLDEST = "&s=indexed&o=asc";
@@ -55,17 +55,16 @@
 			return runSearch(url, BY_MATCH, realQuery).then(numResults => {
 				return numResults > 1000
 					? runSearch(url, BY_NEWEST, realQuery)
-						.then(_=> runSearch(url, BY_OLDEST, realQuery))
-						.then(_=> resolve())
+						.then(() => runSearch(url, BY_OLDEST, realQuery))
+						.then(() => resolve())
 					: resolve()
-			}).then(_=> {
+			}).then(() => {
 				const body = "Run `copy(that);` in your console to copy the URLs to your clipboard.";
 				new Notification(`Harvest complete for ${realQuery}`, {body});
 				lastHarvest = realQuery;
 			});
 		});
 	}
-	
 	
 	
 	/**
@@ -75,7 +74,7 @@
 	 * @param {String}  vars - Additional search variables, if any
 	 * @param {String} query - File-related half of search's query ("extension:pic")
 	 * @return {Promise}
-	 * @private
+	 * @internal
 	 */
 	function runSearch(url, vars, query){
 		const results = silo[query] || (silo[query] = {length: 0});
@@ -84,7 +83,7 @@
 			let page = 0;
 			let pageCount;
 			let resultCount;
-			next().then(_=> Promise.resolve(resultCount));
+			next().then(() => Promise.resolve(resultCount));
 			
 			function next(){
 				return grab(url + vars + (page ? "&p=" + (page + 1) : ""))
@@ -127,7 +126,7 @@
 							return resolve(resultCount);
 						
 						// Throttle the next request so GitHub doesn't bite our head off
-						return wait(2000).then(_=> next());
+						return wait(2000).then(() => next());
 					}));
 			}
 		});
@@ -135,13 +134,13 @@
 
 
 	/**
-	 * Return a {Promise} that resolves after a specified delay.
+	 * Return a {@link Promise} that resolves after a specified delay.
 	 *
 	 * @param {Number} ms
 	 * @return {Promise}
 	 */
 	function wait(ms){
-		return new Promise(resolve => setTimeout(_=> resolve(), ms));
+		return new Promise(resolve => setTimeout(() => resolve(), ms));
 	}
 	
 	
@@ -150,7 +149,7 @@
 	 *
 	 * @param {String} html
 	 * @param {Object} results
-	 * @private
+	 * @internal
 	 */
 	function extract(html, results){
 		
@@ -172,7 +171,6 @@
 		}
 	}
 	
-	
 
 	/**
 	 * Load a resource by URL.
@@ -180,11 +178,9 @@
 	 * We'd use window.fetch, but GitHub isn't returning anything.
 	 * Oddly, an old-school AJAX request seems to be fine.
 	 * 
-	 * TODO: Replace with window.fetch if GitHub ever sorts that out.
-	 *
 	 * @param {String} url
 	 * @return {Promise}
-	 * @private
+	 * @internal
 	 */
 	function grab(url){
 		return new Promise((resolve, reject) => {
@@ -192,7 +188,7 @@
 			req.open("GET", url);
 			req.addEventListener("readystatechange", e => {
 				if(XMLHttpRequest.DONE === req.readyState)
-					resolve({ text: _=> Promise.resolve(req.response) });
+					resolve({ text: () => Promise.resolve(req.response) });
 			});
 			for(const event of "abort error timeout".split(" "))
 				req.addEventListener(event, e => reject(e));
@@ -207,7 +203,7 @@
 	 *
 	 * @param {Array} results
 	 * @return {String}
-	 * @private
+	 * @internal
 	 */
 	function reap(query){
 		
@@ -239,3 +235,5 @@
 			.join("\n")
 	}
 }());
+
+Notification.requestPermission();

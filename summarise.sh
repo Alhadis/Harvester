@@ -6,16 +6,9 @@
 # 2. Give permission for notifications, then wait for it to finish.
 # 3. Run `copy(that);` in your console. This copies collected results
 #    to your clipboard.
-# 4. Paste it to a file named `urls.log`. On macOS, this script
-#    does this automatically; Linux/BSD users must do so manually.
-# 5. Run `summary.sh`
+# 4. Paste it to a file named `urls.log`
+# 5. Run this script to report summaries
 #
-# TODO:
-# - Remove step #4. Stop being lazy.
-#
-
-# Darwin/macOS: Dump contents of system clipboard
-(command -v >/dev/null 2>&1 pbpaste) && pbpaste > urls.log;
 
 # Filter unique repositories
 grep < urls.log -iEoe '^https?://raw\.githubusercontent\.com/([^/]+/){2}' |\

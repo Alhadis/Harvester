@@ -1,6 +1,11 @@
 (function(){
 	"use strict";
 	
+	// Abort script if running outside GitHub
+	if("github.com" !== document.location.host)
+		return alert("This script must be run whilst on github.com");
+	
+	
 	// Don't clobber any existing globals
 	if(window.harvest || window.silo) return;
 
@@ -25,6 +30,9 @@
 	Object.defineProperty(window, "that", {
 		get: () => lastHarvest ? reap(lastHarvest) : ""
 	});
+	
+	// Request permission to show desktop notifications, if needed
+	Notification.requestPermission();
 	
 	
 	/**
@@ -279,5 +287,3 @@
 			.join("\n");
 	}
 }());
-
-Notification.requestPermission();

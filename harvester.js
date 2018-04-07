@@ -161,14 +161,57 @@
 		// Isolate the list, then examine each chunk one-by-one
 		const items = html.split(/<div[^>]+class="[^"]*code-list-item[^"]+code-list-item-public[^"]*"[^>]*>/ig);
 		for(const i of items){
-			const user = i.match(/<img[^>]+alt="@([^"@]+)"[^>]+class="avatar[\s"]/i);
-			if(!user) continue;
+			const images = extractImages(i);
+			const avatar = images.find(img => /^@[^@]/.test(img.alt) && -1 !== img.classList.indexOf("avatar"));
+			if(!avatar) continue;
 			const path = i.match(/^(?:.|\n)*?(?:&#8211;|–)\s*<a[^>]+href="([^"]+)"/i)[1];
 			if(!results[path]){
 				results[path] = path.replace(/^((?:\/[^\/]+){2})\/blob(?=\/)/gmi, "https://raw.githubusercontent.com$1");
 				++results.length;
 			}
 		}
+	}
+	
+
+	/**
+	 * Extract a list of <img/> tags from a chunk of HTML source.
+	 * 
+	 * @param {String} html
+	 * @return {Object[]} Array of objects enumerated with HTML attributes.
+	 * @internal
+	 */
+	function extractImages(html){
+		const results = [];
+		const images = html.match(/<img[^>]*>/gi);
+		
+		// No image tags
+		if(!images) return results;
+		
+		for(const tag of images){
+			const img = Object.create(null);
+			const attr = tag
+				.replace(/^<img\s*|\s*\/?>$/g, "")
+				.match(/([^=]+)\s*=\s*("[^"]*"|'[^']*'|[^'"\s]+)/g)
+				.map(str => {
+					const [key, value] = str.match(/^\s*([^\s=]+)=(.*)$/).slice(1);
+					return [key.toLowerCase(), value.replace(/^(["'])(.*)\1$/, "$2")];
+				});
+			for(let [key, value] of attr)
+				switch(key){
+					case "width":
+					case "height":
+						img[key] = parseInt(value);
+						break;
+					case "class":
+						img.className = value;
+						img.classList = value.trim().split(/\s+/);
+						break;
+					default:
+						img[key] = value;
+				}
+			results.push(img);
+		}
+		return results;
 	}
 	
 

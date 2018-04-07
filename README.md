@@ -23,30 +23,29 @@ Usage
 2. **Navigate to a GitHub-hosted page in your browser.**  
 Remember, the URL's domain *must* be `github.com` due to [CORS restrictions][CORS].
 
-3. In your browser's console,
+3. **In your browser's console,**
 
 	1. **Paste the contents of [`harvester.js`][]**  
 	This defines the commands you'll use in the next step.
-	
-	It might request your permission to display desktop notifications – this is used to notify you when it finishes.
+	It might request your permission to display desktop notifications.
+	This is used to notify you when a harvest has finished.
 	
 	2. **Run `harvest(" … ")` to begin a search.**  
-	To search for entire filenames instead of extensions, prepend the argument with `filename:`. For example:
-	
-	~~~js
-	harvest("filename:.bashrc");
-	~~~
+	To search for entire filenames instead of extensions, use `filename:…`. For example:
+		~~~js
+		harvest("filename:.bashrc");
+		~~~
 
-4. **Wait for the script to finish.**  
-Depending on how many results there are, this may take a while.
-The script will display a desktop notification once it finishes.
+4. **Wait for it to finish.**  
+This may take a while, depending on how many results there are.
+You'll see a desktop notification when it finishes.
 
 5. **Run `copy(that)` in the browser console.**  
 This copies the collected URLs to your clipboard.
 
 
-JavaScript API
---------------
+JavaScript interface
+--------------------
 Running [`harvester.js`][] adds three properties to global context:
 
 #### `window.harvest()`

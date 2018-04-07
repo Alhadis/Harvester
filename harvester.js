@@ -47,7 +47,7 @@
 			if(!bogusQuery){
 				const rand = Math.random(1e6).toString(16).replace(/\./, "").toUpperCase();
 				bogusQuery = "NOT nothack" + rand;
-			};
+			}
 			
 			const query = encodeURIComponent(`${realQuery} ${bogusQuery}`).replace(/%20/g, "+");
 			const url   = `https://github.com/search?q=${query}&type=Code`;
@@ -57,7 +57,7 @@
 					? runSearch(url, BY_NEWEST, realQuery)
 						.then(() => runSearch(url, BY_OLDEST, realQuery))
 						.then(() => resolve())
-					: resolve()
+					: resolve();
 			}).then(() => {
 				const body = "Run `copy(that);` in your console to copy the URLs to your clipboard.";
 				new Notification(`Harvest complete for ${realQuery}`, {body});
@@ -93,7 +93,7 @@
 						// No results. Reject.
 						if(/<div[^>]+class="blankslate">/.test(html)){
 							const notice = "Must include at least one user, organization, or repository";
-							const match  = notice.split(" ").join("\\s+")
+							const match  = notice.split(" ").join("\\s+");
 							const reason = new RegExp(match, "i").test(html)
 								? ["Failed.", "GitHub's doing that weird thing again:", `\t> "${notice}"`].join("\n\n")
 								: "No results";
@@ -166,7 +166,7 @@
 			if(!avatar) continue;
 			const path = i.match(/^(?:.|\n)*?(?:&#8211;|–)\s*<a[^>]+href="([^"]+)"/i)[1];
 			if(!results[path]){
-				results[path] = path.replace(/^((?:\/[^\/]+){2})\/blob(?=\/)/gmi, "https://raw.githubusercontent.com$1");
+				results[path] = path.replace(/^((?:\/[^/]+){2})\/blob(?=\/)/gmi, "https://raw.githubusercontent.com$1");
 				++results.length;
 			}
 		}
@@ -229,7 +229,7 @@
 		return new Promise((resolve, reject) => {
 			const req = new XMLHttpRequest();
 			req.open("GET", url);
-			req.addEventListener("readystatechange", e => {
+			req.addEventListener("readystatechange", () => {
 				if(XMLHttpRequest.DONE === req.readyState)
 					resolve({ text: () => Promise.resolve(req.response) });
 			});
@@ -276,7 +276,7 @@
 				if(a > b) return  1;
 				return 0;
 			})
-			.join("\n")
+			.join("\n");
 	}
 }());
 

@@ -1,7 +1,7 @@
 SRC    = harvester.js
 TARGET = bookmarklet.js
 
-all: install $(TARGET)
+all: install lint $(TARGET)
 	
 
 # Compile/minify bookmarklet
@@ -13,9 +13,15 @@ $(TARGET): $(SRC)
 	node -c $@
 
 
+# Check syntax of JS files
+lint:
+	eslint $(SRC)
+
+
 # Install required dependencies
 install:
 	@(command -v uglifyjs 2>&1 >/dev/null) || npm -g uglify-es
+	@(command -v eslint   2>&1 >/dev/null) || npm -g eslint
 
 
 # Delete generated files

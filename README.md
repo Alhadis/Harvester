@@ -45,8 +45,32 @@ The script will display a desktop notification once it finishes.
 This copies the collected URLs to your clipboard.
 
 
-Downloading
------------
+JavaScript API
+--------------
+Running [`harvester.js`][] adds three properties to global context:
+
+#### `window.harvest()`
+The function used for starting a search.
+
+#### `window.silo`
+An [`Object`][] where successful searches are cached. Results are keyed by query; e.g., `extension:foo`.
+
+#### `window.that`
+Reference to the results of the last successful harvest.
+Meant for use with the console's `copy` command:
+
+~~~js
+copy(that);
+~~~
+
+Which is essentially a more readable form of
+~~~js
+copy(silo[Object.keys(silo).pop()]);
+~~~
+
+
+Downloading files
+-----------------
 
 The list copied by step #5 above is just a plain-text, newline-delimited URL list.
 Use a tool like [`wget(1)`](https://linux.die.net/man/1/wget) or [`curl(1)`](https://linux.die.net/man/1/curl) to download files *en masse*:
@@ -98,3 +122,4 @@ Unique users: %s
 
 [`harvester.js`]: https://raw.githubusercontent.com/Alhadis/Harvester/master/harvester.js
 [CORS]: https://en.wikipedia.org/wiki/Cross-origin_resource_sharing
+[`Object`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object

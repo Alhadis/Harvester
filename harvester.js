@@ -201,8 +201,9 @@
 	/**
 	 * Retrieve URLs collected for a previously-run query.
 	 *
-	 * @param {Array} results
-	 * @return {String}
+	 * @example silo.reap("foo");
+	 * @param {String} query
+	 * @return {String} List of URLs, separated by newline
 	 * @internal
 	 */
 	function reap(query){

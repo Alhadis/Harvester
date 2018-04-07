@@ -156,7 +156,7 @@ sed -e "s/'/%27/g" /path/to/url.list | xargs -n1 curl -# -O
 ~~~
 
 
-Reporting usage
+Helpful scripts
 ---------------
 
 Some useful shell commands to help with reporting in-the-wild usage on GitHub:
@@ -190,6 +190,25 @@ Unique repos: %s
 Unique users: %s
 '
 ~~~
+
+
+The following utilities are also of interest:
+
+*	[`gh-search`](https://github.com/Alhadis/.files/blob/master/bin/gh-search)  
+	Opens the URL of an extension/filename search using the system's default browser.
+	
+	~~~shell
+	gh-search -e foo; # Search by extension
+	gh-search -f foo; # Search by filename
+	~~~
+
+*	[`fixext`](https://github.com/Alhadis/.files/blob/master/bin/fixext)  
+	Fixes the suffixes added by `wget(1)` when downloading files with the same name.
+	
+	~~~console
+	$ fixext foo *
+	Renamed: saved.foo.1 -> saved.1.foo
+	~~~
 
 
 [`harvester.js`]: https://raw.githubusercontent.com/Alhadis/Harvester/master/harvester.js

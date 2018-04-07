@@ -2,48 +2,60 @@ Harvester
 =========
 
 This is a script for collecting public search results for filename or file-extension queries on GitHub.
-It's used to gauge in-the-wild usage of new languages or extensions to be registered by [GitHub Linguist](https://github.com/github/linguist). For more info on registering new languages, [see their docs](https://github.com/github/linguist/blob/master/CONTRIBUTING.md).
+
+It's used by [GitHub Linguist](https://github.com/github/linguist) contributors to gauge real-world usage of languages and file extensions, especially when submitting new languages for [registration on GitHub](https://github.com/github/linguist/blob/master/CONTRIBUTING.md).
+
+Due to weird access restrictions, the script must be run
+
+* from a browser context,
+* from a page hosted on `github.com`,
+* whilst signed-in with a registered GitHub account.
+
+Attempting to load search results from an unauthorised or headless context **will fail**.
+See for yourself by opening [this page](https://github.com/search?q=extension%3Ajs+NOT+nothack&type=Code) while signed in, and compare it with what an incognito browser window sees.
 
 
-Weirdness and limitations
--------------------------
+Usage
+-----
 
-Due to unusual access restrictions, the script must be run with a GitHub-hosted page open in a browser,
-and only when signed-in with a registered GitHub account. Ergo, there's no command-line tool to handle
-all this for you.
+1. **Copy [`harvester.js`][] to your clipboard**
 
-Also note that attempts to access search-results from headless or unauthorised contexts **will fail**.
-You can see this yourself by opening [this url](https://github.com/search?q=extension%3Ajs+NOT+nothack&type=Code)
-in an incognito window, and comparing it with what you see while signed in.
+2. **Navigate to a GitHub-hosted page in your browser.**  
+Remember, the URL's domain *must* be `github.com` due to [CORS restrictions][CORS].
 
+3. In your browser's console,
 
-Collecting search results
--------------------------
+	1. **Paste the contents of [`harvester.js`][]**  
+	This defines the commands you'll use in the next step.
+	
+	It might request your permission to display desktop notifications – this is used to notify you when it finishes.
+	
+	2. **Run `harvest(" … ")` to begin a search.**  
+	To search for entire filenames instead of extensions, prepend the argument with `filename:`. For example:
+	
+	~~~js
+	harvest("filename:.bashrc");
+	~~~
 
-1. Copy the contents of [`harvester.js`][] to your system's clipboard.
+4. **Wait for the script to finish.**  
+Depending on how many results there are, this may take a while.
+The script will display a desktop notification once it finishes.
 
-2. Open a GitHub page in your browser's console. The URL **must** include the domain `github.com` due to [CORS restrictions][CORS].
-
-3. In your browser's console, paste and enter the contents of [`harvester.js`][] copied from step #1.
-
-4. Wait for the script to finish. This might take a while, but you'll receive a desktop notification after it finishes.
-
-5. Run `copy(that);` in your console. This copies the collected URL list to your clipboard.
+5. **Run `copy(that)` in the browser console.**  
+This copies the collected URLs to your clipboard.
 
 
 Downloading
 -----------
 
 The list copied by step #5 above is just a plain-text, newline-delimited URL list.
-Simply use whatever utility you'd normally use for downloading files *en masse*.
+Use a tool like [`wget(1)`](https://linux.die.net/man/1/wget) or [`curl(1)`](https://linux.die.net/man/1/curl) to download files *en masse*:
 
-### Using [`wget(1)`](https://linux.die.net/man/1/wget)
 ~~~shell
+# Using `wget` (recommended)
 wget -i url.list -nv
-~~~
 
-### Using [`curl(1)`](https://linux.die.net/man/1/curl)
-~~~shell
+# Or by using `curl`
 sed -e "s/'/%27/g" url.list | xargs -n1 curl -# -O
 ~~~
 
@@ -51,10 +63,10 @@ sed -e "s/'/%27/g" url.list | xargs -n1 curl -# -O
 Reporting usage
 ---------------
 
-Some shell commands for reporting in-the-wild usage on GitHub:
+Some useful shell commands to help with reporting in-the-wild usage on GitHub:
 
 
-### Extract a list of unique repositories
+#### Listing unique repositories
 This reads from `urls.log` and writes the output to `unique-repos.log`.
 
 ~~~shell
@@ -63,8 +75,8 @@ grep < urls.log -iEoe '^https?://raw\.githubusercontent\.com/([^/]+/){2}' \
 ~~~
 
 
-### Extract a list of unique users
-This reads from `unique-repos.log` (from the above example) and saves to `unique-users.log`:
+#### Listing unique users
+This reads from `unique-repos.log` and saves to `unique-users.log`:
 
 ~~~shell
 grep < unique-repos.log -oE '^https://github\.com\/[^/]+' \
@@ -72,7 +84,7 @@ grep < unique-repos.log -oE '^https://github\.com\/[^/]+' \
 ~~~
 
 
-### Tallying results
+#### Tallying results
 This prints a summary of how many unique users and repositories were found in total.
 
 ~~~shell
@@ -84,5 +96,5 @@ Unique users: %s
 ~~~
 
 
-[`harvester.js`]: ./harvester.js
+[`harvester.js`]: https://raw.githubusercontent.com/Alhadis/Harvester/master/harvester.js
 [CORS]: https://en.wikipedia.org/wiki/Cross-origin_resource_sharing

@@ -18,7 +18,7 @@ See for yourself by opening [this page](https://github.com/search?q=extension%3A
 Usage
 -----
 
-1. **Copy [`harvester.js`][] to your clipboard**
+1. **Copy [`harvester.js`][] to your clipboard.**
 
 2. **Navigate to a GitHub-hosted page in your browser.**  
 Remember, the URL's domain *must* be `github.com` due to [CORS restrictions][CORS].
@@ -31,7 +31,7 @@ Remember, the URL's domain *must* be `github.com` due to [CORS restrictions][COR
 	This is used to notify you when a harvest has finished.
 	
 	2. **Run `harvest(" … ")` to begin a search.**  
-	To search for entire filenames instead of extensions, use `filename:…`. For example:
+	To search for entire filenames instead of extensions, prepend the query with `filename:`:
 		~~~js
 		harvest("filename:.bashrc");
 		~~~
@@ -40,19 +40,80 @@ Remember, the URL's domain *must* be `github.com` due to [CORS restrictions][COR
 This may take a while, depending on how many results there are.
 You'll see a desktop notification when it finishes.
 
-5. **Run `copy(that)` in the browser console.**  
+5. **Run [`copy(that)`](`window.that`) in the browser console.**  
 This copies the collected URLs to your clipboard.
+
 
 
 JavaScript interface
 --------------------
 Running [`harvester.js`][] adds three properties to global context:
 
-#### `window.harvest()`
-The function used for starting a search.
+
+#### `window.harvest(query[, searchHack])`
+The function used for starting a search. It takes two arguments:
+
+*	`query`  
+	Your search query: either an extension or a filename.
+
+	~~~js
+	harvest("extension:foo"); // Extension
+	harvest("filename:foo");  // Filename
+	~~~
+
+	Because extensions are more frequently searched for than filenames,
+	the `"extension:"` prefix is optional. Ergo, the first line above
+	can be shortened to just this:
+
+	~~~js
+	harvest("foo"); // Extension
+	~~~
+	
+	This is the format used throughout the rest of this documentation.
+
+*	`searchHack`  
+	An optional legitimate search query to include.
+	The default is `"NOT nothack"` followed by random hex digits:
+
+	~~~js
+	"NOT nothack" + Math.random(1e6).toString(16).replace(/\./, "").toUpperCase();
+	~~~
+	
+	However, sometimes you want to narrow searches down to files which contain a
+	certain substring. In those cases, you include the second parameter:
+	
+	~~~js
+	// Match `*.foo` files which contain the word "bar".
+	harvest("foo", "bar");
+	~~~
+	
+	**Sidenote:** The `"nothack"` above is necessitated by the requirement that
+	[advanced searches](https://github.com/search/advanced) include specific search
+	criteria. This makes site-wide searching of extensions impossible, so this hacky
+	workaround is used instead.
+
+
 
 #### `window.silo`
-An [`Object`][] where successful searches are cached. Results are keyed by query; e.g., `extension:foo`.
+An [`Object`][] where successful searches are cached, keyed by query. Its contents look like this:
+
+~~~js
+window.silo = {
+	"extension:foo": {
+		length: 6528,
+		
+		"/user/repo/blob/6eb5537/path/file.foo": "https://raw.githubusercontent.com/…",
+		… 6527 more results
+	},
+};
+~~~
+
+The `silo` contains a helper method called `reap` which extracts, sorts, and joins a list of results as a string.
+It's called internally when accessing [`window.that`][] to sanitise the URL list before copying to the clipboard.
+
+The `silo` exists to provide some way of resuming an interrupted harvest, such as in the case of a lost connection.
+It isn't some persistent storage mechanism: navigating to another page causes its contents to be lost.
+
 
 #### `window.that`
 Reference to the results of the last successful harvest.
@@ -62,24 +123,28 @@ Meant for use with the console's `copy` command:
 copy(that);
 ~~~
 
-Which is essentially a more readable form of
+Which is essentially a shortcut for
+
 ~~~js
-copy(silo[Object.keys(silo).pop()]);
+copy(silo.reap("extension:foo"));
 ~~~
+
 
 
 Downloading files
 -----------------
 
-The list copied by step #5 above is just a plain-text, newline-delimited URL list.
-Use a tool like [`wget(1)`](https://linux.die.net/man/1/wget) or [`curl(1)`](https://linux.die.net/man/1/curl) to download files *en masse*:
+The list copied by running `copy(that);` is a plain-text list of URLs that can be passed to
+[`wget(1)`](https://linux.die.net/man/1/wget),
+[`curl(1)`](https://linux.die.net/man/1/curl),
+or a similar utility to download files *en masse*:
 
 ~~~shell
 # Using `wget` (recommended)
-wget -i url.list -nv
+wget -nv -i /path/to/url.list
 
-# Or by using `curl`
-sed -e "s/'/%27/g" url.list | xargs -n1 curl -# -O
+# Using `curl`
+sed -e "s/'/%27/g" /path/to/url.list | xargs -n1 curl -# -O
 ~~~
 
 

@@ -44,6 +44,14 @@ You'll see a desktop notification when it finishes.
 This copies the collected URLs to your clipboard.
 
 
+Bookmarklet
+-----------
+
+If you find yourself using this script often, consider adding [`bookmarklet.js`][] to your browser's toolbar as a [bookmarklet](https://en.wikipedia.org/wiki/Bookmarklet).
+
+Ideally, this script would load the latest version of `harvester.js` and attach it to the page.
+This isn't possible due to [CORS][] restrictions, so the entire script needs to be embedded as a single URL.
+
 
 JavaScript interface
 --------------------
@@ -185,5 +193,6 @@ Unique users: %s
 
 
 [`harvester.js`]: https://raw.githubusercontent.com/Alhadis/Harvester/master/harvester.js
+[`bookmarklet.js`]: https://raw.githubusercontent.com/Alhadis/Harvester/master/bookmarklet.js
 [CORS]: https://en.wikipedia.org/wiki/Cross-origin_resource_sharing
 [`Object`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object

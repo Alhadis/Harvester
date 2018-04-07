@@ -40,7 +40,7 @@ Remember, the URL's domain *must* be `github.com` due to [CORS restrictions][COR
 This may take a while, depending on how many results there are.
 You'll see a desktop notification when it finishes.
 
-5. **Run [`copy(that)`](`window.that`) in the browser console.**  
+5. **Run [`copy(that)`][that] in the browser console.**  
 This copies the collected URLs to your clipboard.
 
 
@@ -117,7 +117,7 @@ window.silo = {
 ~~~
 
 The `silo` contains a helper method called `reap` which extracts, sorts, and joins a list of results as a string.
-It's called internally when accessing [`window.that`][] to sanitise the URL list before copying to the clipboard.
+It's called internally when accessing [`window.that`][that] to extract a sorted URL list.
 
 The `silo` exists to provide some way of resuming an interrupted harvest, such as in the case of a lost connection.
 It isn't some persistent storage mechanism: navigating to another page causes its contents to be lost.
@@ -214,4 +214,5 @@ The following utilities are also of interest:
 [`harvester.js`]: https://raw.githubusercontent.com/Alhadis/Harvester/master/harvester.js
 [`bookmarklet.js`]: https://raw.githubusercontent.com/Alhadis/Harvester/master/bookmarklet.js
 [CORS]: https://en.wikipedia.org/wiki/Cross-origin_resource_sharing
+[that]: #windowthat
 [`Object`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object

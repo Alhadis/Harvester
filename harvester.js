@@ -30,6 +30,12 @@
 	Object.defineProperty(window, "that", {
 		get: () => lastHarvest ? reap(lastHarvest) : ""
 	});
+
+	// Prevent accidental page navigation from interrupting a harvest
+	let harvesting = false;
+	window.addEventListener("beforeunload", e => harvesting
+		? e.returnValue = "Your harvest hasn't finished. Are you sure you wish to cancel?"
+		: undefined);
 	
 	// Request permission to show desktop notifications, if needed
 	Notification.requestPermission();
@@ -45,6 +51,7 @@
 	 * @public
 	 */
 	function harvest(realQuery, bogusQuery = null){
+		harvesting = true;
 		
 		if(!/^extension:|filename:/.test(realQuery))
 			realQuery = "extension:" + realQuery;
@@ -70,7 +77,11 @@
 				const body = "Run `copy(that);` in your console to copy the URLs to your clipboard.";
 				new Notification(`Harvest complete for ${realQuery}`, {body});
 				lastHarvest = realQuery;
+				harvesting = false;
 			});
+		}).catch(error => {
+			harvesting = false;
+			throw error;
 		});
 	}
 	

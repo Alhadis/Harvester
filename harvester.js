@@ -53,7 +53,7 @@
 	function harvest(realQuery, bogusQuery = null){
 		harvesting = true;
 		
-		if(!/^extension:|filename:/.test(realQuery))
+		if(!/^extension:|filename:|in:filename/.test(realQuery))
 			realQuery = "extension:" + realQuery;
 		
 		return new Promise(resolve => {

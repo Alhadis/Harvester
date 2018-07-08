@@ -174,7 +174,7 @@
 		
 		// Play it safe and guillotine everything outside the result-list
 		const start = html.match(/<div[^>]+id="code_search_results"[^>]*>/i);
-		const end   = html.match(/<div[^>]+id="search_cheatsheet_pane"/i);
+		const end   = html.match(/<div[^>]+class="paginate-container"[^>]*/i);
 		html        = html.substring(start.index, end.index);
 		
 		// Isolate the list, then examine each chunk one-by-one

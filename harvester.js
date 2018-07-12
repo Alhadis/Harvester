@@ -102,69 +102,86 @@
 			let page = 0;
 			let pageCount;
 			let resultCount;
-			next().then(() => Promise.resolve(resultCount));
+			return next().then(() => Promise.resolve(resultCount));
 			
-			function next(){
-				return grab(url + vars + (page ? "&p=" + (page + 1) : ""))
-					.catch(error   => reject(error))
-					.then(response => response.text().then(html => {
-						
-						// No results. Reject.
-						if(/<div[^>]+class="blankslate">/.test(html)){
-							const notice = "Must include at least one user, organization, or repository";
-							const match  = notice.split(" ").join("\\s+");
-							const reason = new RegExp(match, "i").test(html)
-								? ["Failed.", "GitHub's doing that weird thing again:", `\t> "${notice}"`].join("\n\n")
-								: "No results";
-							return reject(reason);
+			async function next(){
+				const response = await grab(url + vars + (page ? "&p=" + (page + 1) : ""));
+				const htmlTree = await response.text().then(htmlData => {
+					const frag = document.createDocumentFragment();
+					const root = frag.appendChild(document.createElement("div"));
+					root.insertAdjacentHTML("afterbegin", htmlData);
+					frag.root  = root;
+					return frag;
+				});
+				const $  = s => htmlTree.querySelector(s);
+				const $$ = s => htmlTree.querySelectorAll(s);
+				
+				// No results. Reject.
+				if($("div.blankslate")){
+					const notice = "Must include at least one user, organization, or repository";
+					const match  = notice.split(" ").join("\\s+");
+					const reason = new RegExp(match, "i").test(html)
+						? ["Failed.", "GitHub's doing that weird thing again:", `\t> "${notice}"`].join("\n\n")
+						: "No results";
+					return reject(reason);
+				}
+				
+				// Extract the result-entry row from this page of results
+				const listContainer = $("#code_search_results > .code-list") || die("Search-result list not found");
+				const listItems = listContainer.querySelectorAll(".code-list-item");
+				if(listItems.length < 1) die("Expected at least one entry to match `.code-list-item`");
+
+				for(const result of results){
+					const avatar = result.querySelectorAll("img.avatar[alt^='@']");
+					const link   = result.querySelector("a.text-bold + a[href]");
+					if(avatar.length && link && !results[link.href]){
+						++results.length;
+						results[link.href] = link.href.replace(
+							/^((?:\/[^/]+){2})\/blob(?=\/)/gmi,
+							"https://raw.githubusercontent.com$1"
+						);
+					}
+				}
+
+
+				// Examine how many pages there are
+				if(undefined === pageCount){
+
+					// Get all numeric links in pagination footer, using the last button's
+					// number to determine how many result pages in total were found.
+					const pageLinks = Array.from($$(".pagination > a")).filter(n => Number.isNaN(+n));
+					const lastLink  = pageLinks.pop();
+
+					// Two or more pages: Find out how many results we're lookin' at.
+					if(lastLink){
+						pageCount = lastLink.textContent;
+
+						// This needs to point to the title that says "Showing 263,443,068 code results"
+						const h3 = $(".codesearch-results > .pl-2 h3");
+						if(h3 && h3.textContent.match(/\b([0-9.,\s]+)\s.*?code\s+results/i))
+							resultCount = +(RegExp.$1.replace(/\D/g, ""));
+						else{
+							die("Unable to extract result count from page's header.");
+							console.error(error);
+							throw error;
 						}
-						
-						extract(html, results);
-						
-						// Examine how many pages there are
-						if(undefined === pageCount){
-							const match = html.match(/">(\d+)<\/a>\s*<a[^>]+?class="next_page"[^>]+?rel="next"/i);
-							
-							// Two or more pages
-							if(match){
-								const regex = /<h3>\s*(?:We.ve\s+found\s+)?([,\d]+)\s+code\s+results/i;
-								if(regex.test(html)){
-									resultCount = +(RegExp.$1.replace(/\D/g, ""));
-									pageCount   = match[1];
-								}
-								// If the match failed, it indicates another markup change
-								else{
-									const issue = "Alhadis/Harvester/issues/4#issuecomment-404355137";
-									const error = Object.assign(new SyntaxError(), {
-										name: "Unexpected markup",
-										fileName: "harvester.js",
-										message: `
-											Unable to extract result count from page's header. This usually"
-											indicates a change to GitHub's markup, and Harvester may require
-											an update. For more info, see ${window.location.origin}/${issue}.
-										`.replace(/[\t\n]+/g, " ").trim(),
-									});
-									console.error(error);
-									throw error;
-								}
-							}
-							
-							// If null, it means there was only one page to load
-							else{
-								resultCount = results.length;
-								pageCount   = 1;
-							}
-						}
-						
-						++page;
-						
-						// No more pages to load
-						if(page >= pageCount)
-							return resolve(resultCount);
-						
-						// Throttle the next request so GitHub doesn't bite our head off
-						return wait(2000).then(() => next());
-					}));
+					}
+
+					// If null, it means there was only one page to load
+					else{
+						resultCount = results.length;
+						pageCount   = 1;
+					}
+				}
+
+				++page;
+
+				// No more pages to load
+				if(page >= pageCount)
+					return resolve(resultCount);
+
+				// Throttle the next request so GitHub doesn't bite our head off
+				return wait(2000).then(() => next());
 			}
 		});
 	}
@@ -182,82 +199,25 @@
 	
 	
 	/**
-	 * Parse a chunk of HTML source for search results.
+	 * Print an error message before throwing an error object.
+	 * The provided message is assigned to the thrown Error's
+	 * `message` property.
 	 *
-	 * @param {String} html
-	 * @param {Object} results
-	 * @internal
+	 * @param {String} errorMessage
+	 * @throws {Error}
 	 */
-	function extract(html, results){
-		
-		// Play it safe and guillotine everything outside the result-list
-		const start = html.match(/<div[^>]+id="code_search_results"[^>]*>/i);
-		const end   = html.match(/<div[^>]+class="paginate-container"[^>]*/i);
-		html        = html.substring(start.index, end.index);
-		
-		// Isolate the list, then examine each chunk one-by-one
-		const items = html.split(/<div[^>]+class="[^"]*code-list-item[^"]+code-list-item-public[^"]*"[^>]*>/ig);
-		for(const i of items){
-			const images = extractImages(i);
-			const avatar = images.find(img => /^@[^@]/.test(img.alt) && -1 !== img.classList.indexOf("avatar"));
-			if(!avatar) continue;
-			const path = i.match(/^(?:.|\n)*?(?:&#8211;|–)\s*<a[^>]+href="([^"]+)"/i)[1];
-			if(!results[path]){
-				results[path] = path.replace(/^((?:\/[^/]+){2})\/blob(?=\/)/gmi, "https://raw.githubusercontent.com$1");
-				++results.length;
-			}
-		}
-	}
-	
-
-	/**
-	 * Extract a list of <img/> tags from a chunk of HTML source.
-	 * 
-	 * @param {String} html
-	 * @return {Object[]} Array of objects enumerated with HTML attributes.
-	 * @internal
-	 */
-	function extractImages(html){
-		const results = [];
-		const images = html.match(/<img[^>]*>/gi);
-		
-		// No image tags
-		if(!images) return results;
-		
-		for(const tag of images){
-			const img = Object.create(null);
-			const attr = tag
-				.replace(/^<img\s*|\s*\/?>$/g, "")
-				.match(/([^=]+)\s*=\s*("[^"]*"|'[^']*'|[^'"\s]+)/g)
-				.map(str => {
-					const [key, value] = str.match(/^\s*([^\s=]+)=(.*)$/).slice(1);
-					return [key.toLowerCase(), value.replace(/^(["'])(.*)\1$/, "$2")];
-				});
-			for(let [key, value] of attr)
-				switch(key){
-					case "width":
-					case "height":
-						img[key] = parseInt(value);
-						break;
-					case "class":
-						img.className = value;
-						img.classList = value.trim().split(/\s+/);
-						break;
-					default:
-						img[key] = value;
-				}
-			results.push(img);
-		}
-		return results;
+	function die(errorMessage){
+		throw Object.assign(new Error(), {
+			name: "Unexpected Markup Error",
+			message: errorMessage,
+			fileName: "harvester.js",
+		});
 	}
 	
 
 	/**
 	 * Load a resource by URL.
 	 *
-	 * We'd use window.fetch, but GitHub isn't returning anything.
-	 * Oddly, an old-school AJAX request seems to be fine.
-	 * 
 	 * @param {String} url
 	 * @return {Promise}
 	 * @internal

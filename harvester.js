@@ -131,9 +131,9 @@
 				const listItems = listContainer.querySelectorAll(".code-list-item");
 				if(listItems.length < 1) die("Expected at least one entry to match `.code-list-item`");
 
-				for(const result of results){
-					const avatar = result.querySelectorAll("img.avatar[alt^='@']");
-					const link   = result.querySelector("a.text-bold + a[href]");
+				for(const item of listItems){
+					const avatar = item.querySelectorAll("img.avatar[alt^='@']");
+					const link   = item.querySelector("a.text-bold + a[href]");
 					if(avatar.length && link && !results[link.href]){
 						++results.length;
 						results[link.href] = link.href.replace(
@@ -200,18 +200,17 @@
 	
 	/**
 	 * Print an error message before throwing an error object.
-	 * The provided message is assigned to the thrown Error's
-	 * `message` property.
 	 *
-	 * @param {String} errorMessage
+	 * @param {String} message
 	 * @throws {Error}
 	 */
-	function die(errorMessage){
-		throw Object.assign(new Error(), {
-			name: "Unexpected Markup Error",
-			message: errorMessage,
-			fileName: "harvester.js",
-		});
+	function die(message){
+		const error    = new SyntaxError(message);
+		error.title    = "Unexpected Markup Error";
+		error.fileName = "harvester.js";
+		error.message  = message;
+		console.trace(message);
+		throw error;
 	}
 	
 

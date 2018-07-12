@@ -78,6 +78,8 @@
 		} catch(error){
 			harvesting = false;
 			console.error(error);
+			if(parseHTML.lastResult)
+				console.log({lastPageSnapshot: parseHTML.lastResult});
 			throw error;
 		}
 	}
@@ -132,8 +134,6 @@
 				}
 			}
 
-
-			console.log(pageCount);
 
 			// Examine how many pages there are
 			if(undefined === pageCount){
@@ -196,6 +196,7 @@
 		const root = frag.appendChild(document.createElement("div"));
 		root.insertAdjacentHTML("afterbegin", source);
 		frag.root = root;
+		parseHTML.lastResult = frag;
 		return frag;
 	}
 

@@ -50,39 +50,36 @@
 	 * @return {Promise}
 	 * @public
 	 */
-	function harvest(realQuery, bogusQuery = null){
+	async function harvest(realQuery, bogusQuery = null){
 		harvesting = true;
 		
 		if(!/^extension:|filename:|in:filename/.test(realQuery))
 			realQuery = "extension:" + realQuery;
 		
-		return new Promise(resolve => {
-			
-			// Default to the usual "nothack" with a random number attached
-			if(!bogusQuery){
-				const rand = Math.random(1e6).toString(16).replace(/\./, "").toUpperCase();
-				bogusQuery = "NOT nothack" + rand;
+		// Default to the usual "nothack" with a random number attached
+		if(!bogusQuery){
+			const rand = Math.random(1e6).toString(16).replace(/\./, "").toUpperCase();
+			bogusQuery = "NOT nothack" + rand;
+		}
+
+		const query = encodeURIComponent(`${realQuery} ${bogusQuery}`).replace(/%20/g, "+");
+		const url   = `https://github.com/search?q=${query}&type=Code`;
+		
+		try{
+			const numResults = await runSearch(url, BY_MATCH, realQuery);
+			if(numResults > 1000){
+				await runSearch(url, BY_NEWEST, realQuery);
+				await runSearch(url, BY_OLDEST, realQuery);
 			}
-			
-			const query = encodeURIComponent(`${realQuery} ${bogusQuery}`).replace(/%20/g, "+");
-			const url   = `https://github.com/search?q=${query}&type=Code`;
-			
-			return runSearch(url, BY_MATCH, realQuery).then(numResults => {
-				return numResults > 1000
-					? runSearch(url, BY_NEWEST, realQuery)
-						.then(() => runSearch(url, BY_OLDEST, realQuery))
-						.then(() => resolve())
-					: resolve();
-			}).then(() => {
-				const body = "Run `copy(that);` in your console to copy the URLs to your clipboard.";
-				new Notification(`Harvest complete for ${realQuery}`, {body});
-				lastHarvest = realQuery;
-				harvesting = false;
-			});
-		}).catch(error => {
+			const body = "Run `copy(that);` in your console to copy the URLs to your clipboard.";
+			new Notification(`Harvest complete for ${realQuery}`, {body});
+			lastHarvest = realQuery;
 			harvesting = false;
+		} catch(error){
+			harvesting = false;
+			console.error(error);
 			throw error;
-		});
+		}
 	}
 	
 	
@@ -95,95 +92,111 @@
 	 * @return {Promise}
 	 * @internal
 	 */
-	function runSearch(url, vars, query){
-		const results = silo[query] || (silo[query] = {length: 0});
-		
-		return new Promise((resolve, reject) => {
-			let page = 0;
-			let pageCount;
-			let resultCount;
-			return next().then(() => Promise.resolve(resultCount));
+	async function runSearch(url, vars, query){
+		const results    = silo[query] || (silo[query] = {length: 0});		
+		let page         = 0;
+		let pageCount    = undefined;
+		let resultCount  = undefined;
+		return resultCount = await next();
+
+		async function next(){
+			const response = await grab(url + vars + (page ? "&p=" + (page + 1) : ""));
+			const htmlTree = await response.text().then(html => parseHTML(html));
+			const $  = s => htmlTree.querySelector(s);
+			const $$ = s => htmlTree.querySelectorAll(s);
 			
-			async function next(){
-				const response = await grab(url + vars + (page ? "&p=" + (page + 1) : ""));
-				const htmlTree = await response.text().then(htmlData => {
-					const frag = document.createDocumentFragment();
-					const root = frag.appendChild(document.createElement("div"));
-					root.insertAdjacentHTML("afterbegin", htmlData);
-					frag.root  = root;
-					return frag;
-				});
-				const $  = s => htmlTree.querySelector(s);
-				const $$ = s => htmlTree.querySelectorAll(s);
-				
-				// No results. Reject.
-				if($("div.blankslate")){
-					const notice = "Must include at least one user, organization, or repository";
-					const match  = notice.split(" ").join("\\s+");
-					const reason = new RegExp(match, "i").test(html)
-						? ["Failed.", "GitHub's doing that weird thing again:", `\t> "${notice}"`].join("\n\n")
-						: "No results";
-					return reject(reason);
-				}
-				
-				// Extract the result-entry row from this page of results
-				const listContainer = $("#code_search_results > .code-list") || die("Search-result list not found");
-				const listItems = listContainer.querySelectorAll(".code-list-item");
-				if(listItems.length < 1) die("Expected at least one entry to match `.code-list-item`");
-
-				for(const item of listItems){
-					const avatar = item.querySelectorAll("img.avatar[alt^='@']");
-					const link   = item.querySelector("a.text-bold + a[href]");
-					if(avatar.length && link && !results[link.href]){
-						++results.length;
-						results[link.href] = link.href.replace(
-							/^((?:\/[^/]+){2})\/blob(?=\/)/gmi,
-							"https://raw.githubusercontent.com$1"
-						);
-					}
-				}
-
-
-				// Examine how many pages there are
-				if(undefined === pageCount){
-
-					// Get all numeric links in pagination footer, using the last button's
-					// number to determine how many result pages in total were found.
-					const pageLinks = Array.from($$(".pagination > a")).filter(n => Number.isNaN(+n));
-					const lastLink  = pageLinks.pop();
-
-					// Two or more pages: Find out how many results we're lookin' at.
-					if(lastLink){
-						pageCount = lastLink.textContent;
-
-						// This needs to point to the title that says "Showing 263,443,068 code results"
-						const h3 = $(".codesearch-results > .pl-2 h3");
-						if(h3 && h3.textContent.match(/\b([0-9.,\s]+)\s.*?code\s+results/i))
-							resultCount = +(RegExp.$1.replace(/\D/g, ""));
-						else{
-							die("Unable to extract result count from page's header.");
-							console.error(error);
-							throw error;
-						}
-					}
-
-					// If null, it means there was only one page to load
-					else{
-						resultCount = results.length;
-						pageCount   = 1;
-					}
-				}
-
-				++page;
-
-				// No more pages to load
-				if(page >= pageCount)
-					return resolve(resultCount);
-
-				// Throttle the next request so GitHub doesn't bite our head off
-				return wait(2000).then(() => next());
+			// No results. Reject.
+			if($("div.blankslate")){
+				const notice = "Must include at least one user, organization, or repository";
+				const match  = notice.split(" ").join("\\s+");
+				const reason = new RegExp(match, "i").test(htmlData)
+					? ["Failed.", "GitHub's doing that weird thing again:", `\t> "${notice}"`].join("\n\n")
+					: "No results";
+				throw reason;
 			}
-		});
+			
+			// Extract the result-entry row from this page of results
+			const listContainer = $("#code_search_results > .code-list") || die("Search-result list not found");
+			const listItems = listContainer.querySelectorAll(".code-list-item");
+			if(listItems.length < 1) die("Expected at least one entry to match `.code-list-item`");
+
+			for(const item of listItems){
+				const avatar = item.querySelectorAll("img.avatar[alt^='@']");
+				const link   = item.querySelector("a.text-bold + a[href]");
+				if(avatar.length && link && !results[link.href]){
+					++results.length;
+					results[link.href] = link.href.replace(
+						/^((?:\/[^/]+){2})\/blob(?=\/)/gmi,
+						"https://raw.githubusercontent.com$1"
+					);
+				}
+			}
+
+
+			console.log(pageCount);
+
+			// Examine how many pages there are
+			if(undefined === pageCount){
+
+				// Get all numeric links in pagination footer
+				const pageLinks = $$(".pagination > a[href]");
+
+				// Two or more pages: Find out how many results we're lookin' at.
+				if(pageLinks.length){
+					const pageIndexes = Array.from(pageLinks)
+						.filter(a => /^\s*[0-9]+\s*$/.test(a.textContent))
+						.map(a => parseInt(a.textContent.trim()));
+					pageCount = Math.max(...pageIndexes);
+
+					// Title that says "Showing 263,443,068 code results"
+					const h3 = $(".codesearch-results > .pl-2 h3");
+					if(h3 && h3.textContent.match(/\b([0-9.,\s]+)\s/)){
+						resultCount = +(RegExp.$1.replace(/\D/g, ""));
+
+						// If the matched text doesn't include "code results", then it's too
+						// high a risk we've extracted a number from a different heading.
+						if(!/\b(code\s+results?)\b/.test(h3.textContent))
+							return die(deindent`
+								Missing text found where "${resultCount} code results" expected.
+								Please double-check <h3> contains correct number of search results";
+							`.trim());
+					}
+					else die("Unable to extract total number of results from header");
+				}
+
+				// If null, it means there was only one page to load
+				else{
+					resultCount = results.length;
+					pageCount   = 1;
+				}
+			}
+
+			++page;
+
+			// No more pages to load
+			if(page >= pageCount)
+				return resultCount;
+
+			// Throttle the next request so GitHub doesn't bite our head off
+			await wait(2000);
+			return next();
+		}
+	}
+
+
+	/**
+	 * Safely parse a block of HTML source as a detached DOM tree.
+	 *
+	 * @param {String} source - Raw HTML source
+	 * @return {DocumentFragment}
+	 * @internal
+	 */
+	function parseHTML(source){
+		const frag = document.createDocumentFragment();
+		const root = frag.appendChild(document.createElement("div"));
+		root.insertAdjacentHTML("afterbegin", source);
+		frag.root = root;
+		return frag;
 	}
 
 
@@ -273,5 +286,71 @@
 				return 0;
 			})
 			.join("\n");
+	}
+
+
+
+	/**
+	 * Strip excess whitespace from a multiline string.
+	 *
+	 * Intended to be used with tagged template literals,
+	 * but will work on any multiline string value.
+	 *
+	 * @example
+	 * const HTML = deindent;
+	 * let output = HTML `
+	 *     <div>
+	 *         (Text)
+	 *     </div>
+	 * `;
+	 * output == "<div>\n\t(Text)\n</div>";
+	 *
+	 * @param {Object|String} input
+	 * @param {...String} [args]
+	 * @return {String}
+	 * @see {@link https://github.com/Alhadis/Utils}
+	 */
+	function deindent(input, ...args){
+		
+		// Avoid breaking on String.raw if called as an ordinary function
+		if("object" !== typeof input || "object" !== typeof input.raw)
+			return deindent `${input}`;
+		
+		const depthTable = [];
+		let maxDepth = Number.NEGATIVE_INFINITY;
+		let minDepth = Number.POSITIVE_INFINITY;
+		
+		// Normalise newlines and strip leading or trailing blank lines
+		const chunk = String.raw.call(null, input, ...args)
+			.replace(/\r(\n?)/g, "$1")
+			.replace(/^(?:[ \t]*\n)+|(?:\n[ \t]*)+$/g, "");
+
+		for(const line of chunk.split(/\n/)){
+			// Ignore whitespace-only lines
+			if(!/\S/.test(line)) continue;
+			
+			const indentString = line.match(/^[ \t]*(?=\S|$)/)[0];
+			const indentLength = indentString.replace(/\t/g, " ".repeat(8)).length;
+			if(indentLength < 1) continue;
+
+			const depthStrings = depthTable[indentLength] || [];
+			depthStrings.push(indentString);
+			maxDepth = Math.max(maxDepth, indentLength);
+			minDepth = Math.min(minDepth, indentLength);
+			if(!depthTable[indentLength])
+				depthTable[indentLength] = depthStrings;
+		}
+
+		if(maxDepth < 1)
+			return chunk;
+		
+		const depthStrings = new Set();
+		for(const column of depthTable.slice(0, minDepth + 1)){
+			if(!column) continue;
+			depthStrings.add(...column);
+		}
+		depthStrings.delete(undefined);
+		const stripPattern = [...depthStrings].reverse().join("|");
+		return chunk.replace(new RegExp(`^(?:${stripPattern})`, "gm"), "");
 	}
 }());

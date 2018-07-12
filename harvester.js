@@ -127,8 +127,26 @@
 							
 							// Two or more pages
 							if(match){
-								resultCount = +html.match(/<h3>\s*(?:We.ve\s+found\s+)?([,\d]+)\s+code\s+results/i)[1].replace(/\D/g, "");
-								pageCount   = match[1];
+								const regex = /<h3>\s*(?:We.ve\s+found\s+)?([,\d]+)\s+code\s+results/i;
+								if(regex.test(html)){
+									resultCount = +(RegExp.$1.replace(/\D/g, ""));
+									pageCount   = match[1];
+								}
+								// If the match failed, it indicates another markup change
+								else{
+									const issue = "Alhadis/Harvester/issues/4#issuecomment-404355137";
+									const error = Object.assign(new SyntaxError(), {
+										name: "Unexpected markup",
+										fileName: "harvester.js",
+										message: `
+											Unable to extract result count from page's header. This usually"
+											indicates a change to GitHub's markup, and Harvester may require
+											an update. For more info, see ${window.location.origin}/${issue}.
+										`.replace(/[\t\n]+/g, " ").trim(),
+									});
+									console.error(error);
+									throw error;
+								}
 							}
 							
 							// If null, it means there was only one page to load

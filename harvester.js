@@ -155,11 +155,11 @@
 
 						// If the matched text doesn't include "code results", then it's too
 						// high a risk we've extracted a number from a different heading.
-						if(!/\b(code\s+results?)\b/.test(h3.textContent))
-							return die(deindent`
-								Missing text found where "${resultCount} code results" expected.
-								Please double-check <h3> contains correct number of search results";
-							`.trim());
+						if(!/\b(code\s+results?)\b/.test(h3.textContent)){
+							let message = `Missing text found where "${resultCount} code results" expected. `;
+							message    += "Please double-check <h3> contains correct number of search results";
+							return die(message);
+						}
 					}
 					else die("Unable to extract total number of results from header");
 				}
@@ -287,71 +287,5 @@
 				return 0;
 			})
 			.join("\n");
-	}
-
-
-
-	/**
-	 * Strip excess whitespace from a multiline string.
-	 *
-	 * Intended to be used with tagged template literals,
-	 * but will work on any multiline string value.
-	 *
-	 * @example
-	 * const HTML = deindent;
-	 * let output = HTML `
-	 *     <div>
-	 *         (Text)
-	 *     </div>
-	 * `;
-	 * output == "<div>\n\t(Text)\n</div>";
-	 *
-	 * @param {Object|String} input
-	 * @param {...String} [args]
-	 * @return {String}
-	 * @see {@link https://github.com/Alhadis/Utils}
-	 */
-	function deindent(input, ...args){
-		
-		// Avoid breaking on String.raw if called as an ordinary function
-		if("object" !== typeof input || "object" !== typeof input.raw)
-			return deindent `${input}`;
-		
-		const depthTable = [];
-		let maxDepth = Number.NEGATIVE_INFINITY;
-		let minDepth = Number.POSITIVE_INFINITY;
-		
-		// Normalise newlines and strip leading or trailing blank lines
-		const chunk = String.raw.call(null, input, ...args)
-			.replace(/\r(\n?)/g, "$1")
-			.replace(/^(?:[ \t]*\n)+|(?:\n[ \t]*)+$/g, "");
-
-		for(const line of chunk.split(/\n/)){
-			// Ignore whitespace-only lines
-			if(!/\S/.test(line)) continue;
-			
-			const indentString = line.match(/^[ \t]*(?=\S|$)/)[0];
-			const indentLength = indentString.replace(/\t/g, " ".repeat(8)).length;
-			if(indentLength < 1) continue;
-
-			const depthStrings = depthTable[indentLength] || [];
-			depthStrings.push(indentString);
-			maxDepth = Math.max(maxDepth, indentLength);
-			minDepth = Math.min(minDepth, indentLength);
-			if(!depthTable[indentLength])
-				depthTable[indentLength] = depthStrings;
-		}
-
-		if(maxDepth < 1)
-			return chunk;
-		
-		const depthStrings = new Set();
-		for(const column of depthTable.slice(0, minDepth + 1)){
-			if(!column) continue;
-			depthStrings.add(...column);
-		}
-		depthStrings.delete(undefined);
-		const stripPattern = [...depthStrings].reverse().join("|");
-		return chunk.replace(new RegExp(`^(?:${stripPattern})`, "gm"), "");
 	}
 }());

@@ -250,6 +250,22 @@
 	}
 
 
+	/**
+	 * Get the "raw" version of a GitHub-hosted file,
+	 *
+	 * @param  {String} input
+	 * @return {String}
+	 * @throws {TypeError} If input is not a conformant blob-view URL. 
+	 */
+	function convertToRawURL(input){
+		const match = input.match(/^https?:\/\/github.com\/([^/#]+)\/([^/#]+)\/blob\/(\w+)((?:\/[^/]+)+)/);
+		if(!match)
+			throw new TypeError(`Invalid GitHub permalink: ${input}`);
+		const [, user, repo, hash, path] = match;
+		return `https://raw.githubusercontent.com/${user}/${repo}/${hash}${path}`;
+	}
+
+
 
 	/**
 	 * Retrieve URLs collected for a previously-run query.
@@ -278,7 +294,7 @@
 		
 		return Object.keys(urls)
 			.filter(a => a !== "length")
-			.map(key => urls[key])
+			.map(key => convertToRawURL(urls[key]))
 			.sort((a, b) => {
 				a = a.toLowerCase();
 				b = b.toLowerCase();

@@ -149,7 +149,7 @@
 					pageCount = Math.max(...pageIndexes);
 
 					// Title that says "Showing 263,443,068 code results"
-					const h3 = $(".codesearch-results > .pl-2 h3");
+					const h3 = $(".codesearch-results h3");
 					if(h3 && h3.textContent.match(/\b([0-9.,\s]+)\s/)){
 						resultCount = +(RegExp.$1.replace(/\D/g, ""));
 

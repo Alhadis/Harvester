@@ -114,7 +114,7 @@
 			if($("div.blankslate")){
 				const notice = "Must include at least one user, organization, or repository";
 				const match  = notice.split(" ").join("\\s+");
-				const reason = new RegExp(match, "i").test(htmlData)
+				const reason = new RegExp(match, "i").test(htmlTree.textContent)
 					? ["Failed.", "GitHub's doing that weird thing again:", `\t> "${notice}"`].join("\n\n")
 					: "No results";
 				throw reason;

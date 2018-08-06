@@ -103,7 +103,10 @@
 
 		async function next(){
 			const response = await grab(url + vars + (page ? "&p=" + (page + 1) : ""));
-			const htmlTree = await response.text().then(html => parseHTML(html));
+			const htmlTree = await response.text().then(html => {
+				html = html.replace(/<img(?=\s)/gi, "<hr");
+				return parseHTML(html);
+			});
 			const $  = s => htmlTree.querySelector(s);
 			const $$ = s => htmlTree.querySelectorAll(s);
 			
@@ -123,7 +126,7 @@
 			if(listItems.length < 1) die("Expected at least one entry to match `.code-list-item`");
 
 			for(const item of listItems){
-				const avatar = item.querySelectorAll("img.avatar[alt^='@']");
+				const avatar = item.querySelectorAll("hr.avatar[alt^='@']");
 				const link   = item.querySelector("a.text-bold + a[href]");
 				if(avatar.length && link && !results[link.href]){
 					++results.length;

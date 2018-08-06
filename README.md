@@ -49,6 +49,8 @@ Bookmarklet
 
 If you find yourself using this script often, consider adding [`bookmarklet.js`][] to your browser's toolbar as a [bookmarklet](https://en.wikipedia.org/wiki/Bookmarklet).
 
+**Note:** This [won't work on Firefox](https://blog.github.com/2013-04-19-content-security-policy/#bookmarklets).
+
 Ideally, this script would load the latest version of `harvester.js` and attach it to the page.
 This isn't possible due to [CORS][] restrictions, so the entire script needs to be embedded as a single URL.
 

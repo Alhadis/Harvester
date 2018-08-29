@@ -1,3 +1,4 @@
+/* globals silo */
 (function(){
 	"use strict";
 	
@@ -19,16 +20,23 @@
 	window.harvest  = harvest;
 	
 	// Ensure the silo's reap method can't be reassigned
-	Object.defineProperty(window.silo, "reap", {
-		value: reap,
-		writable: false,
-		configurable: false
+	Object.defineProperties(window.silo, {
+		badAppels: {
+			value: [],
+			writable: false,
+			configurable: false,
+		},
+		reap: {
+			value: reap,
+			writable: false,
+			configurable: false,
+		},
 	});
 	
 	// An easier method of accessing the last successful search result
 	let lastHarvest = null;
 	Object.defineProperty(window, "that", {
-		get: () => lastHarvest ? reap(lastHarvest) : ""
+		get: () => lastHarvest ? reap(lastHarvest) : "",
 	});
 
 	// Prevent accidental page navigation from interrupting a harvest
@@ -54,12 +62,12 @@
 		harvesting = true;
 		
 		if(!/^extension:|filename:|in:filename/.test(realQuery))
-			realQuery = "extension:" + realQuery;
+			realQuery = `extension:${realQuery}`;
 		
 		// Default to the usual "nothack" with a random number attached
 		if(!bogusQuery){
 			const rand = Math.random(1e6).toString(16).replace(/\./, "").toUpperCase();
-			bogusQuery = "NOT nothack" + rand;
+			bogusQuery = `NOT nothack${rand}`;
 		}
 
 		const query = encodeURIComponent(`${realQuery} ${bogusQuery}`).replace(/%20/g, "+");
@@ -75,7 +83,8 @@
 			new Notification(`Harvest complete for ${realQuery}`, {body});
 			lastHarvest = realQuery;
 			harvesting = false;
-		} catch(error){
+		}
+		catch(error){
 			harvesting = false;
 			console.error(error);
 			if(parseHTML.lastResult)
@@ -95,14 +104,29 @@
 	 * @internal
 	 */
 	async function runSearch(url, vars, query){
-		const results    = silo[query] || (silo[query] = {length: 0});		
-		let page         = 0;
-		let pageCount    = undefined;
-		let resultCount  = undefined;
+		const results = silo[query] || (silo[query] = {length: 0});
+		let page = 0;
+		let pageCount;
+		let resultCount;
 		return resultCount = await next();
 
+
+		async function loadNextPage(){
+			++page;
+
+			// No more pages to load
+			if(page >= pageCount)
+				return resultCount;
+
+			// Throttle the next request so GitHub doesn't bite our head off
+			await wait(2000);
+			return next();
+		}
+		
+		
 		async function next(){
-			const response = await grab(url + vars + (page ? "&p=" + (page + 1) : ""));
+			const pageURL  = url + vars + (page ? `&p=${page+1}` : "");
+			const response = await grab(pageURL);
 			const htmlTree = await response.text().then(html => {
 				html = html.replace(/<img(?=\s)/gi, "<hr");
 				return parseHTML(html);
@@ -114,10 +138,12 @@
 			if($("div.blankslate")){
 				const notice = "Must include at least one user, organization, or repository";
 				const match  = notice.split(" ").join("\\s+");
-				const reason = new RegExp(match, "i").test(htmlTree.textContent)
+				new RegExp(match, "i").test(htmlTree.textContent)
 					? ["Failed.", "GitHub's doing that weird thing again:", `\t> "${notice}"`].join("\n\n")
 					: "No results";
-				throw reason;
+				console.erorr(`Skipping this one: ${pageURL}\n`);
+				console.error("Find it in window.silo.badAppels");
+				loadNextPage();
 			}
 			
 			// Extract the result-entry row from this page of results
@@ -174,17 +200,12 @@
 				}
 			}
 
-			++page;
-
-			// No more pages to load
-			if(page >= pageCount)
-				return resultCount;
-
-			// Throttle the next request so GitHub doesn't bite our head off
-			await wait(2000);
-			return next();
+			return loadNextPage();
 		}
 	}
+	
+	
+	
 
 
 	/**
@@ -282,15 +303,15 @@
 		
 		// No query-type included, figure out what the user meant
 		if(!/^extension:|filename:/.test(query)){
-			const ex = "extension:" + query in silo;
-			const fn = "filename:" + query in silo;
+			const ex = `extension:${query}` in silo;
+			const fn = `filename:${query}` in silo;
 			
 			if(ex && fn){
 				const msg = `Both extension:${query} and filename:${query} properties exist in silo.`;
-				throw new ReferenceError(msg + " Which did you mean?");
+				throw new ReferenceError(`${msg} Which did you mean?`);
 			}
-			if(ex)      query = "extension:" + query;
-			else if(fn) query = "filename:"  + query;
+			if(ex)      query = `extension:${query}`;
+			else if(fn) query = `filename:${query}`;
 		}
 		
 		const urls = silo[query] || {};

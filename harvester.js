@@ -21,7 +21,7 @@
 	
 	// Ensure the silo's reap method can't be reassigned
 	Object.defineProperties(window.silo, {
-		badAppels: {
+		badApples: {
 			value: [],
 			writable: false,
 			configurable: false,
@@ -141,8 +141,9 @@
 				new RegExp(match, "i").test(htmlTree.textContent)
 					? ["Failed.", "GitHub's doing that weird thing again:", `\t> "${notice}"`].join("\n\n")
 					: "No results";
-				console.erorr(`Skipping this one: ${pageURL}\n`);
-				console.error("Find it in window.silo.badAppels");
+				console.error(`Skipping this one: ${pageURL}\n`);
+				console.error("Find it in window.silo.badApples");
+				window.silo.badApples.push(pageURL);
 				loadNextPage();
 			}
 			

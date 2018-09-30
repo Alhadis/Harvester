@@ -20,8 +20,8 @@ lint:
 
 # Install required dependencies
 install:
-	@(command -v uglifyjs 2>&1 >/dev/null) || npm install -g uglify-es
-	@(command -v eslint   2>&1 >/dev/null) || npm install -g eslint
+	@(command -v terser 2>&1 >/dev/null) || npm install -g terser
+	@(command -v eslint 2>&1 >/dev/null) || npm install -g eslint
 
 
 # Delete generated files

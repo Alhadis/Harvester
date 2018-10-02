@@ -61,7 +61,7 @@
 	async function harvest(realQuery, bogusQuery = null){
 		harvesting = true;
 		
-		if(!/^extension:|filename:|in:filename/.test(realQuery))
+		if(!/extension:|filename:|in:file|in:path/.test(realQuery))
 			realQuery = `extension:${realQuery}`;
 		
 		// Default to the usual "nothack" with a random number attached

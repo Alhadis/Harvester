@@ -65,7 +65,7 @@
 			realQuery = `extension:${realQuery}`;
 		
 		// Default to the usual "nothack" with a random number attached
-		if(!bogusQuery){
+		if(null == bogusQuery){
 			const rand = Math.random(1e6).toString(16).replace(/\./, "").toUpperCase();
 			bogusQuery = `NOT nothack${rand}`;
 		}

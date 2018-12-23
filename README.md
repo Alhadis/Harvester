@@ -25,22 +25,22 @@ Remember, the URL's domain *must* be `github.com` due to [CORS restrictions][COR
 
 3. **In your browser's console,**
 
-	1. **Paste the contents of [`harvester.js`][]**  
-	This defines the commands you'll use in the next step.
-	It might request your permission to display desktop notifications.
-	This is used to notify you when a harvest has finished.
+	1.	**Paste the contents of [`harvester.js`][]**  
+		This defines the commands you'll use in the next step.
+		It might request your permission to display desktop notifications.
+		This is used to notify you when a harvest has finished.
 	
-	2. **Run `harvest(" … ")` to begin a search.**  
-	To search for entire filenames instead of extensions, prepend the query with `filename:`:
+	2.	**Run `harvest(" … ")` to begin a search.**  
+		To search for entire filenames instead of extensions, prepend the query with `filename:`:
 		~~~js
 		harvest("filename:.bashrc");
 		~~~
-	Arguments are optional if Harvester's running from a search results page.
-	E.g,, if you have [this page](https://github.com/search?q=extension%3Aasy+NOT+SymbolType&type=Code) open in your browser, `harvest();` is the same as
+		Arguments are optional if Harvester's running from a search results page.
+		E.g., if you have [this page](https://github.com/search?q=extension%3Aasy+NOT+SymbolType&type=Code) open in your browser, `harvest();` is the same as  
 		~~~js
 		harvest("extension:asy", "NOT SymbolType");
 		~~~
-	For any other page, a query must be specified.
+		For any other page, a query must be specified.
 
 4. **Wait for it to finish.**  
 This may take a while, depending on how many results there are.

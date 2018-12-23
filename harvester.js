@@ -59,6 +59,22 @@
 	 * @public
 	 */
 	async function harvest(realQuery, bogusQuery = null){
+		if(!realQuery){
+			const {pathname, search} = window.location;
+			if("/search" === pathname && /[?&]q=[^?%\s]/.test(search)){
+				bogusQuery = new URL(window.location)
+					.searchParams.get("q")
+					.replace(/\s+NOT nothack\s*$/, "")
+					.replace(/(?:^|\s+)(filename|extension):(\S+)/, (_, key, value) => {
+						realQuery = value;
+						return "";
+					}).trim();
+				if(realQuery)
+					return harvest(realQuery, bogusQuery || null);
+			}
+			throw new TypeError("Missing query parameter");
+		}
+		
 		harvesting = true;
 		
 		if(!/extension:|filename:|in:file|in:path/.test(realQuery))

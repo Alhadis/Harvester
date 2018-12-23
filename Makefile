@@ -7,7 +7,7 @@ all: install lint $(TARGET)
 # Compile/minify bookmarklet
 $(TARGET): $(SRC)
 	echo 'javascript:(()=>{' > $@
-	uglifyjs $^ -m >> $@
+	terser $^ -m >> $@
 	printf 'let q=prompt("Enter an extension or filename to harvest:");' >> $@
 	printf 'q&&harvest(q)})();' >> $@
 	node -c $@

@@ -31,7 +31,7 @@
 			"error",
 			"always",
 			{
-				"ignorePattern": "camelCased|camelCase",
+				"ignorePattern": "camelCased|camelCase|gropdf|xterm",
 				"ignoreInlineComments": true,
 				"ignoreConsecutiveComments": true
 			}
@@ -122,17 +122,16 @@
 			}
 		],
 		"no-undef-init": "error",
-		"no-underscore-dangle": "error",
+		"no-underscore-dangle": [
+			"error",
+			{"allowAfterThis": true}
+		],
 		"no-unneeded-ternary": "error",
 		"no-useless-concat": "error",
 		"no-useless-constructor": "error",
 		"no-useless-rename": "error",
 		"no-var": "error",
 		"no-with": "error",
-		"operator-linebreak": [
-			"error",
-			"before"
-		],
 		"prefer-arrow-callback": "error",
 		"prefer-const": [
 			"error",
@@ -140,14 +139,22 @@
 		],
 		"prefer-destructuring": [
 			"error",
-			{"array": false, "object": true},
+			{
+				"VariableDeclarator": {
+					"array": false,
+					"object": true
+				},
+				"AssignmentExpression": {
+					"array": false,
+					"object": false
+				}
+			},
 			{"enforceForRenamedProperties": false}
 		],
 		"prefer-numeric-literals": "error",
 		"prefer-object-spread": "error",
 		"prefer-rest-params": "error",
 		"prefer-spread": "error",
-		"prefer-template": "error",
 		"quotes": [
 			"error",
 			"double",
@@ -172,7 +179,11 @@
 		],
 		"space-before-function-paren": [
 			"error",
-			"never"
+			{
+				"named": "never",
+				"anonymous": "never",
+				"asyncArrow": "always"
+			}
 		],
 		"space-in-parens": [
 			"error",

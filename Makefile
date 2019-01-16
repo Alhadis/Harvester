@@ -7,7 +7,7 @@ all: install lint $(TARGET)
 # Compile/minify bookmarklet
 $(TARGET): $(SRC)
 	echo 'javascript:(()=>{' > $@
-	terser $^ -m >> $@
+	npx terser $^ -m >> $@
 	printf 'let q=prompt("Enter an extension or filename to harvest:");' >> $@
 	printf 'q&&harvest(q)})();' >> $@
 	node -c $@
@@ -15,7 +15,7 @@ $(TARGET): $(SRC)
 
 # Check syntax of JS files
 lint:
-	eslint $(SRC)
+	npx eslint $(SRC)
 
 
 # Install required dependencies

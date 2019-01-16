@@ -64,11 +64,16 @@
 			if("/search" === pathname && /[?&]q=[^?%\s]/.test(search)){
 				bogusQuery = new URL(window.location)
 					.searchParams.get("q")
-					.replace(/\s+NOT nothack\s*$/, "")
+					.replace(/\s+NOT\s+nothack\s*$/, "")
 					.replace(/(?:^|\s+)(filename|extension):(\S+)/, (_, key, value) => {
-						realQuery = value;
+						realQuery = key + ":" + value;
 						return "";
 					}).trim();
+				
+				// Check if we still need a hothack (such as if bogusQuery only contains modifier keywords)
+				if(!bogusQuery.split(/(?<!(?:^|\s)NOT)(?<=\S+)(?=\s+)/).some(chunk => /(?:\s|^)NOT\s+/.test(chunk)))
+					bogusQuery += " " + nothack();
+				
 				if(realQuery)
 					return harvest(realQuery, bogusQuery || null);
 			}
@@ -81,11 +86,10 @@
 			realQuery = `extension:${realQuery}`;
 		
 		// Default to the usual "nothack" with a random number attached
-		if(null == bogusQuery){
-			const rand = Math.random(1e6).toString(16).replace(/\./, "").toUpperCase();
-			bogusQuery = `NOT nothack${rand}`;
-		}
-
+		if(null == bogusQuery)
+			bogusQuery = nothack();
+		
+		
 		const query = encodeURIComponent(`${realQuery} ${bogusQuery}`).replace(/%20/g, "+");
 		const url   = `https://github.com/search?q=${query}&type=Code`;
 		
@@ -344,5 +348,18 @@
 				return 0;
 			})
 			.join("\n");
+	}
+	
+	
+	/**
+	 * Generate a randomised, inverted query-string to ensure searches aren't actually filtered.
+	 *
+	 * @example nothack() == "NOT nothack0D5443272F3447";
+	 * @return {String}
+	 * @internal
+	 */
+	function nothack(){
+		const rand = Math.random(1e6).toString(16).replace(/\./, "").toUpperCase();
+		return `NOT nothack${rand}`;
 	}
 }());

@@ -71,7 +71,7 @@
 					}).trim();
 				
 				// Check if we still need a hothack (such as if bogusQuery only contains modifier keywords)
-				if(!bogusQuery.split(/(?<!(?:^|\s)NOT)(?<=\S+)(?=\s+)/).some(chunk => /(?:\s|^)NOT\s+/.test(chunk)))
+				if(!isplit(bogusQuery, /((?:^|\s)NOT)\s+(?!NOT)\S+/).some(chunk => /(?:\s|^)NOT\s+/.test(chunk)))
 					bogusQuery += " " + nothack();
 				
 				if(realQuery)
@@ -361,5 +361,46 @@
 	function nothack(){
 		const rand = Math.random(1e6).toString(16).replace(/\./, "").toUpperCase();
 		return `NOT nothack${rand}`;
+	}
+	
+	/**
+	 * Inclusive string-splitting method.
+	 *
+	 * Identical to {@link String.prototype.split}, except
+	 * matched delimiters are included with the results.
+	 *
+	 * @example
+	 * ("A-B").split(/-/) == ["A", "B"];
+	 * isplit("A-B", /-/) == ["A", "-", "B"];
+	 * 
+	 * @param {String} input
+	 * @param {RegExp} pattern
+	 * @return {String[]}
+	 */
+	function isplit(input, pattern){
+		const output = [];
+		
+		// String-type pattern: convert to RegExp
+		if("string" === typeof pattern)
+			pattern = new RegExp(pattern, "g");
+		
+		// Non-global regexp: avoid infinite recursion
+		else if(!pattern.global)
+			pattern = new RegExp(pattern.source, pattern.flags + "g");
+		
+		let start = 0, match;
+		while(match = pattern.exec(input)){
+			const [substring] = match;
+			const {lastIndex} = pattern;
+			const delimiter = input.substring(start, lastIndex - substring.length);
+			output.push(delimiter, substring);
+			start = lastIndex;
+		}
+		
+		const {length} = input;
+		if(start < length)
+			output.push(input.substring(start, length));
+		
+		return output;
 	}
 }());

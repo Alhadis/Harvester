@@ -163,7 +163,7 @@ wget -nv -i /path/to/url.list
 sed -e "s/'/%27/g" /path/to/url.list | xargs -n1 curl -# -O
 ~~~
 
-Alternatively, to preserve the directory hierarchy while downloading files, you can the following command:
+Alternatively, to preserve the directory hierarchy while downloading files, you can use the following command:
 ~~~shell
 wget -nv -x -i /path/to/url.list
 ~~~

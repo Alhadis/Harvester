@@ -173,12 +173,15 @@
 			if(listItems.length < 1) die("Expected at least one entry to match `.code-list-item`");
 
 			for(const item of listItems){
-				const avatar = item.querySelectorAll("hr.avatar[alt^='@']");
-				const link   = item.querySelector("a.text-bold + a[href]");
-				if(avatar.length && link && !results[link.href]){
+				const match = /^((?:\/[^/]+){2})\/blob(?=\/)/gmi;
+				const link = [...item.querySelectorAll("a")].find(link => {
+					const href = link.getAttribute("href");
+					return href && match.test(href);
+				});
+				if(link && !results[link.href]){
 					++results.length;
 					results[link.href] = link.href.replace(
-						/^((?:\/[^/]+){2})\/blob(?=\/)/gmi,
+						match,
 						"https://raw.githubusercontent.com$1"
 					);
 				}
